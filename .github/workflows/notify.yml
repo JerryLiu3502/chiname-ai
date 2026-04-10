@@ -24,7 +24,7 @@ jobs:
           working-directory: ./
 
       - name: Wait for deployment
-        run: sleep 10
+        run: sleep 20
 
   notify:
     runs-on: ubuntu-latest
