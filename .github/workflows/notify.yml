@@ -1,0 +1,36 @@
+name: Notify Feishu
+
+on:
+  push:
+    branches: [ main ]
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Feishu notification on push
+        if: github.event_name == 'push'
+        run: |
+          curl -X POST "${{ secrets.FEISHU_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "msg_type": "text",
+              "content": {
+                "text": "🚀 GitHub 推送通知\n📦 仓库: ${{ github.repository }}\n🌿 分支: ${{ github.ref_name }}\n📝 提交: ${{ github.event.head_commit.message }}\n👤 作者: ${{ github.actor }}\n🔗 链接: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              }
+            }'
+
+      - name: Send Feishu notification on release
+        if: github.event_name == 'release'
+        run: |
+          curl -X POST "${{ secrets.FEISHU_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "msg_type": "text",
+              "content": {
+                "text": "🎉 新版本发布\n📦 仓库: ${{ github.repository }}\n🏷️ 版本: ${{ github.event.release.tag_name }}\n📝 说明: ${{ github.event.release.body }}\n🔗 链接: ${{ github.event.release.html_url }}"
+              }
+            }'
