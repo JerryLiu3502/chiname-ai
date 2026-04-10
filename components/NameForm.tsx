@@ -32,12 +32,6 @@ export default function NameForm() {
     if (!formData.desiredVibe) {
       newErrors.desiredVibe = "Please select a vibe";
     }
-    if (!formData.aboutYou.trim() || formData.aboutYou.length < 10) {
-      newErrors.aboutYou = "Please tell us about yourself (at least 10 characters)";
-    }
-    if (!formData.useCase) {
-      newErrors.useCase = "Please select a use case";
-    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -45,6 +39,8 @@ export default function NameForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
+      // Save form data to sessionStorage for API call
+      sessionStorage.setItem("nameFormData", JSON.stringify(formData));
       router.push("/result");
     }
   };
@@ -90,7 +86,7 @@ export default function NameForm() {
       {/* About You */}
       <div className="space-y-3">
         <Label htmlFor="aboutYou" className="text-white font-medium">
-          About You <span className="text-[#A78BFA]">*</span>
+          About You <span className="text-[#64748B]">(Optional)</span>
         </Label>
         <Textarea
           id="aboutYou"
@@ -100,30 +96,15 @@ export default function NameForm() {
             setFormData({ ...formData, aboutYou: e.target.value })
           }
           className={cn(
-            "min-h-[120px] text-base rounded-lg border-[#2D2D3A] bg-[#272732] text-white placeholder:text-[#64748B] focus:border-[#A78BFA] focus:ring-[#A78BFA]/20 resize-none",
-            errors.aboutYou && "border-[#EF4444]"
+            "min-h-[120px] text-base rounded-lg border-[#2D2D3A] bg-[#272732] text-white placeholder:text-[#64748B] focus:border-[#A78BFA] focus:ring-[#A78BFA]/20 resize-none"
           )}
         />
-        <div className="flex justify-between text-sm">
-          {errors.aboutYou ? (
-            <span className="text-[#EF4444]">{errors.aboutYou}</span>
-          ) : (
-            <span />
-          )}
-          <span className={cn(
-            "text-[#64748B]",
-            formData.aboutYou.length < 10 && "text-[#A78BFA]",
-            formData.aboutYou.length >= 10 && "text-[#22C55E]"
-          )}>
-            {formData.aboutYou.length}/500
-          </span>
-        </div>
       </div>
 
       {/* Use Case */}
       <div className="space-y-3">
         <Label className="text-white font-medium">
-          Use Case <span className="text-[#A78BFA]">*</span>
+          Use Case <span className="text-[#64748B]">(Optional)</span>
         </Label>
         <RadioGroup
           value={formData.useCase}
@@ -155,9 +136,6 @@ export default function NameForm() {
             </div>
           ))}
         </RadioGroup>
-        {errors.useCase && (
-          <p className="text-sm text-[#EF4444]">{errors.useCase}</p>
-        )}
       </div>
 
       {/* Submit Button */}
