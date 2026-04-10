@@ -68,7 +68,7 @@ export default function HeroSection() {
           {/* Subheadline */}
           <p className="text-xl text-[#94A3B8] mb-10 max-w-2xl mx-auto leading-relaxed">
             Not random. Thoughtfully crafted by AI based on your personality,
-            vibe, and how you want to present yourself to the world.
+            vibe, how you want to present yourself to the world.
           </p>
 
           {/* CTA Buttons */}
