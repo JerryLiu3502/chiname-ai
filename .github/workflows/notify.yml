@@ -8,30 +8,48 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy-and-notify:
+  # 1. 推送代码时立即通知
+  push-notify:
     runs-on: ubuntu-latest
+    steps:
+      - name: Send Feishu notification - Code pushed
+        run: |
+          curl -X POST "${{ secrets.FEISHU_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "msg_type": "text",
+              "content": {
+                "text": "📤 GitHub 代码已推送\n📦 仓库: ${{ github.repository }}\n🌿 分支: ${{ github.ref_name }}\n📝 提交: ${{ github.event.head_commit.message }}\n👤 作者: ${{ github.actor }}\n⏳ 等待 Vercel 部署中..."
+              }
+            }'
+
+  # 2. 部署到 Vercel
+  deploy:
+    runs-on: ubuntu-latest
+    needs: push-notify
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Deploy to Vercel
-        id: deploy
         run: |
           npm install -g vercel
-          vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --yes 2>&1
+          vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --yes
 
+  # 3. 轮询部署状态，部署成功后通知
+  wait-and-notify:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
       - name: Wait for deployment ready
         run: |
-          DEPLOYMENT_URL=""
           MAX_RETRIES=30
           RETRY_COUNT=0
 
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            # Get latest deployment for this project
             RESPONSE=$(curl -s "https://api.vercel.com/v1/deployments" \
               -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}")
 
-            # Check if deployment is ready
             STATUS=$(echo $RESPONSE | grep -o '"readyState":"[^"]*"' | head -1 | cut -d'"' -f4)
 
             if [ "$STATUS" = "READY" ]; then
@@ -40,34 +58,17 @@ jobs:
             fi
 
             RETRY_COUNT=$((RETRY_COUNT + 1))
-            echo "Waiting for deployment... ($RETRY_COUNT/$MAX_RETRIES) Status: $STATUS"
+            echo "Waiting... ($RETRY_COUNT/$MAX_RETRIES) Status: $STATUS"
             sleep 3
           done
 
-          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
-            echo "Timeout waiting for deployment"
-          fi
-
-      - name: Send Feishu notification
-        if: github.event_name == 'push'
+      - name: Send Feishu notification - Deployment ready
         run: |
           curl -X POST "${{ secrets.FEISHU_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d '{
               "msg_type": "text",
               "content": {
-                "text": "🚀 代码已部署到 Vercel！\n📦 仓库: ${{ github.repository }}\n🌿 分支: ${{ github.ref_name }}\n📝 提交: ${{ github.event.head_commit.message }}\n👤 作者: ${{ github.actor }}\n🌐 地址: https://chiname-ai.vercel.app"
-              }
-            }'
-
-      - name: Send Feishu notification on release
-        if: github.event_name == 'release'
-        run: |
-          curl -X POST "${{ secrets.FEISHU_WEBHOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "msg_type": "text",
-              "content": {
-                "text": "🎉 新版本已发布到 Vercel！\n📦 仓库: ${{ github.repository }}\n🏷️ 版本: ${{ github.event.release.tag_name }}\n📝 说明: ${{ github.event.release.body }}\n🌐 地址: https://chiname-ai.vercel.app"
+                "text": "✅ Vercel 部署成功！\n📦 仓库: ${{ github.repository }}\n🌿 分支: ${{ github.ref_name }}\n🌐 地址: https://chiname-ai.vercel.app"
               }
             }'
