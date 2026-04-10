@@ -1,7 +1,7 @@
 import { NameResult, UserFormData } from "@/types";
 import { generatePrompt } from "./prompt";
 
-const API_KEY = "sk-vpgkfxeeasygudhzvptwxqgamdxkbyfmyijvlaakbcnsgcty";
+const API_KEY = process.env.SILICONFLOW_API_KEY || "";
 const API_URL = "https://api.siliconflow.cn/v1/chat/completions";
 const MODEL = "Pro/zai-org/GLM-4.7";
 
