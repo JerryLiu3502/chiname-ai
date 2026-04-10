@@ -1,4 +1,4 @@
-name: Notify Feishu
+name: Deploy and Notify
 
 on:
   push:
@@ -8,8 +8,27 @@ on:
   workflow_dispatch:
 
 jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./
+
+      - name: Wait for deployment
+        run: sleep 10
+
   notify:
     runs-on: ubuntu-latest
+    needs: deploy
     steps:
       - name: Send Feishu notification on push
         if: github.event_name == 'push'
@@ -19,7 +38,7 @@ jobs:
             -d '{
               "msg_type": "text",
               "content": {
-                "text": "🚀 GitHub 推送通知\n📦 仓库: ${{ github.repository }}\n🌿 分支: ${{ github.ref_name }}\n📝 提交: ${{ github.event.head_commit.message }}\n👤 作者: ${{ github.actor }}\n🔗 链接: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                "text": "🚀 代码已部署到 Vercel！\n📦 仓库: ${{ github.repository }}\n🌿 分支: ${{ github.ref_name }}\n📝 提交: ${{ github.event.head_commit.message }}\n👤 作者: ${{ github.actor }}\n🌐 地址: https://chiname-ai.vercel.app"
               }
             }'
 
@@ -31,6 +50,6 @@ jobs:
             -d '{
               "msg_type": "text",
               "content": {
-                "text": "🎉 新版本发布\n📦 仓库: ${{ github.repository }}\n🏷️ 版本: ${{ github.event.release.tag_name }}\n📝 说明: ${{ github.event.release.body }}\n🔗 链接: ${{ github.event.release.html_url }}"
+                "text": "🎉 新版本已发布到 Vercel！\n📦 仓库: ${{ github.repository }}\n🏷️ 版本: ${{ github.event.release.tag_name }}\n📝 说明: ${{ github.event.release.body }}\n🌐 地址: https://chiname-ai.vercel.app"
               }
             }'
